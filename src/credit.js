@@ -25,44 +25,6 @@ module.exports = async () => {
       return repo.save(params)
     },
 
-    consumeCredit: async smsLeft =>
-      (await repo.find(
-        {
-          where: { credit: MoreThan(0) },
-          order: { position: 'ASC' }
-        })
-      ).reduce(
-        (progress, creditRecord) => {
-          if (progress.smsLeft === 0) { return progress }
-
-          const { id, credit, smsCost } = creditRecord
-          const smsThatCanBeSent = parseInt(credit / smsCost)
-          const hasEnoughCredit = smsThatCanBeSent >= progress.smsLeft
-
-          return hasEnoughCredit ?
-            {
-              smsLeft: 0,
-              usedCredits: [
-                ...progress.usedCredits,
-                {
-                  id,
-                  smsUsed: progress.smsLeft,
-                  credit: credit - progress.smsLeft * smsCost
-                }
-              ]
-            } : {
-              smsLeft: progress.smsLeft - smsThatCanBeSent,
-              usedCredits: [
-                ...progress.usedCredits,
-                {
-                  id,
-                  smsUsed: smsThatCanBeSent,
-                  credit: credit - smsThatCanBeSent * smsCost
-                }
-              ]
-            }
-        },
-        { smsLeft, usedCredits: [] }
-      )
+    consumeCredit: smsLeft => {}
   }
 }
