@@ -107,7 +107,7 @@ describe('Credit service', () => {
 
     it('consumes the correct credit', async () => {
       const credit = await creditFactory.create({ position: 0, credit: 10, smsCost: 1 })
-      const { usedCredits, smsLeft } = await creditService.consumeCredit(5)
+      const { usedCredits } = await creditService.consumeCredit(5)
       expect(usedCredits).to.deep.eq([{
         id: credit.id,
         smsUsed: 5,
