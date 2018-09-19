@@ -13,9 +13,9 @@ describe('Credit service', () => {
   })
 
   describe('create', () => {
-    it('creates a credit', async () => {
+    it.only('creates a credit', async () => {
       const credit = await creditService.create({ position: 0, credit: 10 })
-      expect(credit.id).to.not.be.undefined
+      expect(credit).to.not.be.undefined
     })
 
     describe('when the position overlaps at the end', () => {
