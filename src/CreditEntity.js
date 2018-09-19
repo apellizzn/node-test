@@ -14,6 +14,9 @@ module.exports = new EntitySchema({
     position: {
       type: 'integer'
     },
+    smsCost : {
+      type: 'integer',
+    },
     credit: {
       type: 'integer',
     },

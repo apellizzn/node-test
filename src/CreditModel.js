@@ -3,9 +3,11 @@ module.exports = class Credit {
     id,
     credit,
     position,
+    smsCost
   ) {
     this.id = id
     this.credit = credit
     this.position = position
+    this.smsCost = smsCost
   }
 }

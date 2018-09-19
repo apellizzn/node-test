@@ -14,7 +14,7 @@ describe('Credit service', () => {
 
   describe('create', () => {
     it('creates a credit', async () => {
-      const credit = await creditService.create({ position: 0, credit: 10 })
+      const credit = await creditService.create({ position: 0, credit: 10, smsCost: 1 })
       expect(credit.id).to.not.be.undefined
     })
 
@@ -32,7 +32,7 @@ describe('Credit service', () => {
       })
 
       it('insert the credit in the correct position', async () => {
-        const credit = await creditService.create({ position: 3, credit: 10 })
+        const credit = await creditService.create({ position: 3, credit: 10, smsCost: 1 })
 
         const credits = await creditFactory.repository.find({
           where: { id: In([credit0.id, credit1.id, credit2.id, credit.id]) },
@@ -60,7 +60,7 @@ describe('Credit service', () => {
       })
 
       it('adjusts other credit positions', async () => {
-        const credit = await creditService.create({ position: 1, credit: 10 })
+        const credit = await creditService.create({ position: 1, credit: 10, smsCost: 1 })
 
         const credits = await creditFactory.repository.find({
           where: { id: In([credit0.id, credit1.id, credit2.id, credit.id]) },
@@ -83,7 +83,7 @@ describe('Credit service', () => {
       })
 
       it('insert the credit in the correct position', async () => {
-        const credit = await creditService.create({ position: 0, credit: 10 })
+        const credit = await creditService.create({ position: 0, credit: 10, smsCost: 1 })
 
         const credits = await creditFactory.repository.find({
           where: { id: In([credit0.id, credit1.id, credit2.id, credit.id]) },
@@ -95,6 +95,65 @@ describe('Credit service', () => {
         expect(credits[2].id).to.deep.eq(credit1.id)
         expect(credits[3].id).to.deep.eq(credit2.id)
       })
+    })
+  })
+
+  describe('consumeCredit', () => {
+    it('consmue the sms', async () => {
+      const credit = await creditFactory.create({ position: 0, credit: 10, smsCost: 1 })
+      const { smsLeft } = await creditService.consumeCredit(5)
+      expect(smsLeft).to.eq(0)
+    })
+
+    it('consumes the correct credit', async () => {
+      const credit = await creditFactory.create({ position: 0, credit: 10, smsCost: 1 })
+      const { usedCredits, smsLeft } = await creditService.consumeCredit(5)
+      expect(usedCredits).to.deep.eq([{
+        id: credit.id,
+        smsUsed: 5,
+        credit: 5
+      }])
+    })
+
+    it('consumes the credits in order', async () => {
+      const credit0 = await creditFactory.create({ position: 0, credit: 5, smsCost: 1 })
+      const credit1 = await creditFactory.create({ position: 1, credit: 10, smsCost: 2 })
+      const { usedCredits } = await creditService.consumeCredit(7)
+      expect(usedCredits).to.deep.eq([{
+        id: credit0.id,
+        smsUsed: 5,
+        credit: 0
+      },{
+        id: credit1.id,
+        smsUsed: 2,
+        credit: 6
+      }])
+    })
+
+    it('skips the empty credits', async () => {
+      await creditFactory.create({ position: 0, credit: 0, smsCost: 1 })
+      const credit = await creditFactory.create({ position: 1, credit: 10, smsCost: 1 })
+      const { usedCredits } = await creditService.consumeCredit(5)
+      expect(usedCredits).to.deep.eq([{
+        id: credit.id,
+        smsUsed: 5,
+        credit: 5
+      }])
+    })
+
+    it('consumes the credits in order', async () => {
+      const credit0 = await creditFactory.create({ position: 0, credit: 5, smsCost: 1 })
+      const credit1 = await creditFactory.create({ position: 1, credit: 10, smsCost: 2 })
+      const { usedCredits } = await creditService.consumeCredit(7)
+      expect(usedCredits).to.deep.eq([{
+        id: credit0.id,
+        smsUsed: 5,
+        credit: 0
+      },{
+        id: credit1.id,
+        smsUsed: 2,
+        credit: 6
+      }])
     })
   })
 })

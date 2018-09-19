@@ -4,6 +4,7 @@ module.exports = require('./dbConnection').then(() => {
   return {
     creditFactory: new Factory(CreditPack)
     .attr('credit', 100)
+    .attr('smsCost', 1)
     .sequence('position', i => i)
   }
 })
