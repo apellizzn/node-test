@@ -1,5 +1,5 @@
 const dbConnection = require('./dbConnection')
-const { lte, compose, property, includes, partition } = require('lodash/fp')
+const { lte, compose, property, partition } = require('lodash/fp')
 const Promise = require('bluebird')
 
 module.exports = async () => {
@@ -12,16 +12,10 @@ module.exports = async () => {
       property('position')
     )
 
-    const positionTaken = includes(position, credits.map(property('position')))
-
-    if (positionTaken) {
-      const [lowerPriority,] = partition(byPriority, credits)
-
-      await Promise.each(
-        lowerPriority,
-        credit => repo.increment({ id: credit.id }, 'position', 1)
-      )
-    }
+    await Promise.each(
+      partition(byPriority, credits)[0],
+      credit => repo.increment({ id: credit.id }, 'position', 1)
+    )
   }
 
   return {
