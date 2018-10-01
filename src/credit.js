@@ -1,12 +1,16 @@
 const dbConnection = require('./dbConnection')
-const { lte, compose, property, partition } = require('lodash/fp')
+const { lte, compose, property, partition, partial, reduce } = require('lodash/fp')
 const Promise = require('bluebird')
 const { MoreThan } = require('typeorm')
 
 module.exports = async () => {
   const db = await dbConnection
   const repo = db.getRepository('Credit')
-
+  const composeRule = (rules, resolve) => reduce(
+    (memo, f) => partial(f, [memo]),
+    resolve,
+    rules
+  )
   const adjustPositions = async (credits, position) => {
     const byPriority = compose(
       lte(position),
@@ -48,6 +52,10 @@ module.exports = async () => {
           }
         },
         { smsLeft, usedCredits: [] }
-      )
+      ),
+    executeOnCredit: async (rules, resolve, id, params) => {
+      const operation = composeRule(rules, resolve)
+      return operation(await repo.findOne(id), params)
+    }
   }
 }

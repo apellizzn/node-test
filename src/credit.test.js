@@ -1,6 +1,8 @@
 const chai = require('chai')
+chai.use(require('chai-as-promised'))
 const expect = chai.expect
 const { In } = require('typeorm')
+const { notExpensive, lowBudgetUser } = require('./rules')
 
 require('./index')
 
@@ -154,6 +156,81 @@ describe('Credit service', () => {
         smsUsed: 2,
         credit: 6
       }])
+    })
+  })
+
+  describe('composeRule', () => {
+    let credit
+
+    beforeEach(async () => {
+      credit = await creditFactory.create({ credit: 10, smsCost: 2 })
+    })
+
+    describe('when not expensive is given', () => {
+      const splittable = (c, params) => {
+        if(c.credit % params.splitter === 0) { return c.credit / params.splitter }
+        else { throw new Error('Cannot split') }
+      }
+
+      describe('when respects the rule', () => {
+        it('returns the correct value', async () => {
+          const response = await creditService.executeOnCredit(
+            [notExpensive],
+            splittable,
+            credit.id,
+            { splitter: 2, smsCost: 10, credit: 11 }
+          )
+          expect(response).to.eq(5)
+        })
+      })
+
+      describe('when does not respect the rule', () => {
+        it('throws an error', async () => {
+          await expect(creditService.executeOnCredit(
+            [notExpensive],
+            splittable,
+            credit.id,
+            { splitter: 2, smsCost: 1 }
+          )).to.be.rejectedWith('Too Costly')
+        })
+      })
+    })
+
+    describe('when multiple rules are given', () => {
+      const splittable = (c, params) => {
+        if(c.credit % params.splitter === 0) { return c.credit / params.splitter }
+        else { throw new Error('Cannot split') }
+      }
+
+      describe('when respects the rule', () => {
+        it('returns the correct value', async () => {
+          const response = await creditService.executeOnCredit(
+            [notExpensive, lowBudgetUser],
+            splittable,
+            credit.id,
+            { splitter: 2, smsCost: 10, credit: 11 }
+          )
+          expect(response).to.eq(5)
+        })
+      })
+
+      describe('when does not respect any of the rules', () => {
+        it('throws an error', async () => {
+          await expect(creditService.executeOnCredit(
+            [notExpensive, lowBudgetUser],
+            splittable,
+            credit.id,
+            { splitter: 2, smsCost: 1, credit: 11 }
+          )).to.be.rejectedWith('Too Costly')
+
+          await expect(creditService.executeOnCredit(
+            [notExpensive, lowBudgetUser],
+            splittable,
+            credit.id,
+            { splitter: 2, smsCost: 5, credit: 9 }
+          )).to.be.rejectedWith('Too Rich')
+        })
+      })
     })
   })
 })
